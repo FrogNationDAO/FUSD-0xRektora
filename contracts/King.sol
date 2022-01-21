@@ -15,10 +15,6 @@ interface IReserveOracle {
 /// @author 0xRektora (https://github.com/0xRektora)
 /// @notice Crown has the ability to add and disable reserve, which can be any ERC20 (stable/LP) given an oracle
 /// that compute the exchange rates between $FUSD and the latter.
-/// @dev Potential flaw of this tokenomics:
-/// - Ability for the crown to change freely reserve parameters. (suggestion: immutable reserve/reserve parameter)
-/// - Ability to withdraw assets and break the burning mechanism.
-/// (suggestion: if reserve not immutable, compute a max amount withdrawable delta for a given reserve)
 contract King {
     struct Reserve {
         uint128 mintingInterestRate; // In Bps
@@ -96,8 +92,6 @@ contract King {
 
     /// @notice Use this function to create/change parameters of a given reserve
     /// @dev We inline assign each state to save gas instead of using Struct constructor
-    /// @dev Potential flaw of this tokenomics:
-    /// - Ability for the crown to change freely reserve parameters. (suggestion: immutable reserve/reserve parameter)
     /// @param _reserve the address of the asset to be used (ERC20 compliant)
     /// @param _mintingInterestRate The interest rate to be vested at mint
     /// @param _burningTaxRate The Burning tax rate that will go to sWagme holders
@@ -128,7 +122,6 @@ contract King {
         reserve.isReproveWhitelisted = _isReproveWhitelisted;
         reserve.sWagmeTaxRate = _sWagmeTaxRate;
 
-        // !\ Careful of gas cost /!\
         if (!doesReserveExists(_reserve)) {
             reserveAddresses.push(_reserve);
         }
@@ -292,7 +285,6 @@ contract King {
     }
 
     /// @notice Check if a reserve was created
-    /// @dev /!\ Careful of gas cost /!\
     /// @param _reserve The reserve to check
     /// @return exists A boolean of its existence
     function doesReserveExists(address _reserve) public view returns (bool exists) {
@@ -331,9 +323,6 @@ contract King {
     }
 
     /// @notice Withdraw [[_to]] a given [[_amount]] of [[_reserve]] and reset its freeReserves
-    /// @dev Potential flaw of this tokenomics:
-    /// - Ability to withdraw assets and break the burning mechanism.
-    /// (suggestion: if reserve not immutable, compute a max amount withdrawable delta for a given reserve)
     /// @param _reserve The asset to be used (ERC20)
     /// @param _to The receiver
     /// @param _amount The amount to withdrawn
@@ -350,10 +339,6 @@ contract King {
     }
 
     /// @notice Drain every reserve [[_to]] and reset all freeReserves
-    /// @dev /!\ Careful of gas cost /!\
-    /// @dev Potential flaw of this tokenomics:
-    /// - Ability to withdraw assets and break the burning mechanism.
-    /// (suggestion: if reserve not immutable, compute a max amount withdrawable delta for a given reserve)
     /// @param _to The receiver
     function withdrawAll(address _to) external onlyCrown {
         for (uint256 i = 0; i < reserveAddresses.length; i++) {
@@ -450,7 +435,6 @@ contract King {
                     emit UpdateReserveReproveWhitelistAddresses(_reserveAddress, true, false);
                 } else {
                     // Remove it from the whitelist
-                    // /!\ Gas cost /!\
                     for (uint256 i = 0; i < reserveReproveWhitelistAddresses.length; i++) {
                         if (reserveReproveWhitelistAddresses[i] == _reserveAddress) {
                             // Get the last element in the removed element
